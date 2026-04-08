@@ -90,7 +90,7 @@ export const SnakeGame: React.FC = () => {
                         <span className="text-white font-bold">{score}</span>
                     </div>
                     <div className="flex flex-col border-l border-slate-700 pl-4">
-                        <span className="text-rose-500 font-black">BEST</span>
+                        <span className="text-rose-500 font-black">HighScore</span>
                         <span className="text-white font-bold">{highScore}</span>
                     </div>
                     <div className="flex flex-col border-l border-slate-700 pl-4">
@@ -111,7 +111,7 @@ export const SnakeGame: React.FC = () => {
 
                 {status === 'IDLE' && (
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center backdrop-blur-[2px] rounded-2xl">
-                        <p className="text-white font-bold animate-pulse text-center px-4">УДИРДЛАГА ДАРЖ ЭХЛҮҮЛНЭ ҮҮ</p>
+                        <p className="text-white font-bold animate-pulse text-center px-4">Arrow товч дээр дарж эхлүүлнэ үү</p>
                     </div>
                 )}
 
