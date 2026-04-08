@@ -6,7 +6,6 @@ import { CANVAS_SIZE, GRID_SIZE } from '../utils/constants';
 export const SnakeGame: React.FC = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
-    // Custom Hook-ээс бүх хэрэгцээт төлөв болон функцүүдийг авна
     const {
         snake,
         food,
@@ -21,13 +20,10 @@ export const SnakeGame: React.FC = () => {
         moveSnake
     } = useSnakeLogic();
 
-    // 1. Хэрэглэгчийн оролтыг (Input) хянах
+    // 1. Гарны даралтыг мэдрэх (Компьютерт зориулсан)
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            // Тоглоом эхлээгүй үед дурын сум дарвал эхлүүлнэ
-            if (status === 'IDLE' && e.key.includes("Arrow")) {
-                setStatus('PLAYING');
-            }
+            if (status === 'IDLE' && e.key.includes("Arrow")) setStatus('PLAYING');
 
             switch (e.key) {
                 case "ArrowUp": setDir(d => d.y === 1 ? d : { x: 0, y: -1 }); break;
@@ -36,137 +32,136 @@ export const SnakeGame: React.FC = () => {
                 case "ArrowRight": setDir(d => d.x === -1 ? d : { x: 1, y: 0 }); break;
             }
         };
-
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
     }, [status, setDir, setStatus]);
 
-    // 2. Тоглоомын гол цикл (Game Loop)
-    // currentSpeed өөрчлөгдөх бүрт (level ахихад) setInterval дахин тохируулагдана
+    // 2. Тоглоомын цикл
     useEffect(() => {
         if (status !== 'PLAYING') return;
-
-        const interval = setInterval(() => {
-            moveSnake();
-        }, currentSpeed);
-
+        const interval = setInterval(moveSnake, currentSpeed);
         return () => clearInterval(interval);
     }, [moveSnake, currentSpeed, status]);
 
-    // 3. Canvas дээр зураглал хийх (Rendering)
+    // 3. Зураглал (Canvas Rendering)
     useEffect(() => {
         const ctx = canvasRef.current?.getContext("2d");
         if (!ctx) return;
 
-        // Арын дэвсгэр цэвэрлэх
         ctx.fillStyle = "#0f172a";
         ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
 
         // Могой зурах
-        ctx.fillStyle = "#10b981"; // Emerald Green
-        snake.forEach((part, index) => {
-            // Толгойн хэсэг арай өөр өнгөтэй байж болно
-            if (index === 0) ctx.fillStyle = "#34d399";
-            else ctx.fillStyle = "#10b981";
-
+        snake.forEach((p, i) => {
+            ctx.fillStyle = i === 0 ? "#34d399" : "#10b981";
             ctx.beginPath();
-            // Дугуйрсан ирмэгтэй дөрвөлжин
-            ctx.roundRect(
-                part.x * GRID_SIZE,
-                part.y * GRID_SIZE,
-                GRID_SIZE - 2,
-                GRID_SIZE - 2,
-                4
-            );
+            ctx.roundRect(p.x * GRID_SIZE, p.y * GRID_SIZE, GRID_SIZE - 2, GRID_SIZE - 2, 4);
             ctx.fill();
         });
 
-        // Хоол зурах (Гэрэлтсэн эффекттэй)
-        ctx.fillStyle = "#f43f5e"; // Rose Red
+        // Хоол зурах
+        ctx.fillStyle = "#f43f5e";
         ctx.shadowBlur = 15;
         ctx.shadowColor = "#f43f5e";
         ctx.beginPath();
-        ctx.arc(
-            food.x * GRID_SIZE + GRID_SIZE / 2,
-            food.y * GRID_SIZE + GRID_SIZE / 2,
-            GRID_SIZE / 2 - 2,
-            0, Math.PI * 2
-        );
+        ctx.arc(food.x * GRID_SIZE + GRID_SIZE / 2, food.y * GRID_SIZE + GRID_SIZE / 2, GRID_SIZE / 2 - 2, 0, Math.PI * 2);
         ctx.fill();
-        ctx.shadowBlur = 0; // Бусад дүрсүүдэд нөлөөлөхөөс сэргийлнэ
+        ctx.shadowBlur = 0;
     }, [snake, food]);
 
+    // Утасны удирдлагын функц
+    const handleMobileControl = (x: number, y: number) => {
+        if (status === 'IDLE') setStatus('PLAYING');
+        setDir(currentDir => {
+            // Буцаж эргэхээс сэргийлэх логик
+            if (x !== 0 && currentDir.x === -x) return currentDir;
+            if (y !== 0 && currentDir.y === -y) return currentDir;
+            return { x, y };
+        });
+    };
+
     return (
-        <div className="flex flex-col items-center gap-6 p-4">
+        <div className="flex flex-col items-center gap-6 p-4 max-w-full">
             {/* Мэдээллийн самбар */}
-            <div className="flex justify-between w-full max-w-[400px] px-6 py-3 bg-slate-800/50 rounded-2xl border border-slate-700 backdrop-blur-md shadow-xl">
-                <div className="flex gap-6 font-mono text-sm">
+            <div className="flex justify-between w-full max-w-[400px] px-4 py-3 bg-slate-800/80 rounded-2xl border border-slate-700 backdrop-blur-md">
+                <div className="flex gap-4 font-mono text-xs sm:text-sm">
                     <div className="flex flex-col">
                         <span className="text-slate-500">SCORE</span>
-                        <span className="text-white font-bold text-lg">{score}</span>
+                        <span className="text-white font-bold">{score}</span>
                     </div>
-                    <div className="flex flex-col border-l border-slate-700 pl-6">
-                        <span className="text-slate-500">LEVEL</span>
-                        <span className="text-cyan-400 font-bold text-lg">{level}</span>
+                    <div className="flex flex-col border-l border-slate-700 pl-4">
+                        <span className="text-rose-500 font-black">BEST</span>
+                        <span className="text-white font-bold">{highScore}</span>
                     </div>
-                    <div className="flex flex-col border-l border-slate-700 pl-6">
-                        <span className="text-rose-500 text-[10px] font-black italic">HIGH SCORE</span>
-                        <span className="text-white font-bold text-lg">{highScore}</span>
+                    <div className="flex flex-col border-l border-slate-700 pl-4">
+                        <span className="text-slate-500">LVL</span>
+                        <span className="text-cyan-400 font-bold">{level}</span>
                     </div>
-                </div>
-                <div className="flex items-center">
-                    <span className="text-emerald-500 font-black tracking-widest text-xl italic">SNAKE</span>
                 </div>
             </div>
 
             {/* Тоглоомын талбар */}
-            <div className="relative group transition-all duration-500 ease-in-out">
+            <div className="relative">
                 <canvas
                     ref={canvasRef}
                     width={CANVAS_SIZE}
                     height={CANVAS_SIZE}
-                    className="rounded-2xl border-8 border-slate-800 shadow-[0_0_60px_-15px_rgba(16,185,129,0.2)]"
+                    className="rounded-2xl border-4 border-slate-800 shadow-2xl max-w-full h-auto"
                 />
 
-                {/* Эхлэх дэлгэц */}
                 {status === 'IDLE' && (
-                    <div className="absolute inset-0 bg-slate-950/40 flex items-center justify-center backdrop-blur-[3px] rounded-lg">
-                        <div className="text-center animate-bounce">
-                            <p className="text-white font-mono tracking-tighter text-xl">PRESS ANY ARROW KEY</p>
-                            <p className="text-emerald-400 font-mono text-sm">TO START MISSION</p>
-                        </div>
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center backdrop-blur-[2px] rounded-2xl">
+                        <p className="text-white font-bold animate-pulse text-center px-4">УДИРДЛАГА ДАРЖ ЭХЛҮҮЛНЭ ҮҮ</p>
                     </div>
                 )}
 
-                {/* Game Over дэлгэц */}
                 {status === 'GAME_OVER' && (
-                    <div className="absolute inset-0 bg-slate-900/95 flex flex-col items-center justify-center p-8 text-center rounded-lg animate-in fade-in zoom-in duration-300">
-                        <h2 className="text-5xl font-black text-rose-500 mb-2 tracking-tighter">MISSION FAILED</h2>
-                        <p className="text-slate-400 font-mono mb-8 uppercase tracking-widest text-sm">Final Score: {score} | Level: {level}</p>
+                    <div className="absolute inset-0 bg-slate-900/90 flex flex-col items-center justify-center p-6 text-center rounded-2xl">
+                        <h2 className="text-3xl font-black text-rose-500 mb-4 tracking-tighter">GAME OVER</h2>
                         <button
                             onClick={resetGame}
-                            className="group relative px-10 py-4 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-full transition-all transform hover:scale-105 active:scale-95 overflow-hidden"
+                            className="px-8 py-3 bg-emerald-500 text-slate-950 font-black rounded-full active:scale-95 transition-transform"
                         >
-                            <span className="relative z-10">REDEPLOY SNAKE</span>
-                            <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+                            ДАХИН ЭХЛЭХ
                         </button>
                     </div>
                 )}
             </div>
 
-            {/* Удирдлагын тусламж */}
-            <div className="flex gap-4 opacity-30 grayscale hover:opacity-100 hover:grayscale-0 transition-all duration-500">
-                <div className="grid grid-cols-3 gap-1">
-                    <div /> <kbd className="bg-slate-800 p-2 rounded border border-slate-600 text-white text-xs">▲</kbd> <div />
-                    <kbd className="bg-slate-800 p-2 rounded border border-slate-600 text-white text-xs">◀</kbd>
-                    <kbd className="bg-slate-800 p-2 rounded border border-slate-600 text-white text-xs">▼</kbd>
-                    <kbd className="bg-slate-800 p-2 rounded border border-slate-600 text-white text-xs">▶</kbd>
-                </div>
-                <div className="flex flex-col justify-center text-[10px] text-slate-500 font-mono uppercase tracking-tighter">
-                    <span>Navigation</span>
-                    <span>Controls</span>
-                </div>
+            {/* Mobile Controls (Утасны удирдлага) */}
+            <div className="grid grid-cols-3 gap-2 mt-4 md:hidden">
+                <div />
+                <button
+                    className="w-16 h-16 bg-slate-800 rounded-2xl flex items-center justify-center text-2xl active:bg-emerald-500 active:scale-90 transition-all shadow-xl border border-slate-700"
+                    onClick={() => handleMobileControl(0, -1)}
+                >
+                    <span className="text-white">↑</span>
+                </button>
+                <div />
+
+                <button
+                    className="w-16 h-16 bg-slate-800 rounded-2xl flex items-center justify-center text-2xl active:bg-emerald-500 active:scale-90 transition-all shadow-xl border border-slate-700"
+                    onClick={() => handleMobileControl(-1, 0)}
+                >
+                    <span className="text-white">←</span>
+                </button>
+                <button
+                    className="w-16 h-16 bg-slate-800 rounded-2xl flex items-center justify-center text-2xl active:bg-emerald-500 active:scale-90 transition-all shadow-xl border border-slate-700"
+                    onClick={() => handleMobileControl(0, 1)}
+                >
+                    <span className="text-white">↓</span>
+                </button>
+                <button
+                    className="w-16 h-16 bg-slate-800 rounded-2xl flex items-center justify-center text-2xl active:bg-emerald-500 active:scale-90 transition-all shadow-xl border border-slate-700"
+                    onClick={() => handleMobileControl(1, 0)}
+                >
+                    <span className="text-white">→</span>
+                </button>
             </div>
+
+            <p className="hidden md:block text-slate-500 text-xs font-mono uppercase tracking-widest mt-4">
+                Use arrow keys to control
+            </p>
         </div>
     );
 };
